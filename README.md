@@ -1,99 +1,84 @@
 # Saturation Mutagenesis Library Generator
 
-This Python script generates a saturation mutagenesis library for a given wild-type DNA sequence. It creates oligo sequences for each fragment, ensuring that each amino acid position (except the start codon and stop codon) is mutated to all 20 standard amino acids. The script is designed to support fragment assembly with overlapping regions, suitable for PCR amplification and subsequent assembly (e.g., Gibson Assembly or Golden Gate with BsaI).
+## Overview
+This Python script (`Saturation_mutation_NNK.py`) generates a saturation mutagenesis library with overlapping oligonucleotide (oligo) sequences for a given wild-type (WT) DNA sequence. It is designed to create oligos for each amino acid position (except the start codon) mutated to 19 alternative amino acids (excluding the WT amino acid) using *E. coli* optimized codons. The script ensures overlaps between fragments for downstream assembly (e.g., Gibson assembly) and includes safety zones to prevent mutations in overlap regions.
 
 ## Features
-- **Input Flexibility**: Accepts a wild-type DNA sequence and customizable parameters via command-line arguments.
-- **Fragmentation**: Automatically splits the input sequence into fragments of specified length (default 300 bp), with 30 bp safe zones at each end to serve as PCR primer binding sites or overlap regions for assembly.
-- **Saturation Mutagenesis**: Generates oligos for each position (except start codon) to cover all 20 amino acids using optimized codons for *E. coli*.
-- **Overlap Design**: Ensures 60 bp overlaps between fragments (30 bp from the end of one fragment + 30 bp from the start of the next) for reliable assembly.
-- **Output**: Saves results to a CSV file with oligo names, sequences, and lengths.
+- Generates oligos with a target length (default: 300 bp).
+- Maintains 60 bp overlaps (2 × 30 bp safe zones) between fragments to ensure assembly compatibility.
+- Skips the WT amino acid at each position, generating 19 mutants per position.
+- Includes upstream and downstream primer sequences for PCR amplification.
+- Validates input DNA and primer sequences (only A, T, C, G allowed).
+- Outputs a CSV file with oligo names, sequences, and lengths.
+- Warns if any amino acid positions are not covered or if oligo lengths exceed the target.
 
 ## Prerequisites
-- **Python**: Version 3.6 or higher.
-- **Required Libraries**: 
-  - `csv` (built-in)
-  - `math` (built-in)
-  - `argparse` (built-in)
-
-No external dependencies like Biopython are required.
+- Python 3.6+
+- Required libraries: `csv`, `math`, `argparse` (standard libraries)
 
 ## Installation
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd <repository-name>
-   ```
-2. Ensure Python 3 is installed:
-   ```bash
-   python3 --version
-   ```
+No additional installation is required beyond Python. Clone or download the script to your local machine.
 
-## Usage
-Run the script from the command line with the required and optional parameters.
-
-### Command
 ```bash
-python3 script.py --wt_DNA <wild-type-DNA-sequence> [--up_primer <upstream-primer>] [--down_primer <downstream-primer>] [--oligo_len <length>] [--safe_len <length>] [--output <filename>]
+git clone <repository_url>
+cd <repository_directory>
 ```
 
-### Parameters
-- `--wt_DNA` (required): The wild-type DNA sequence (string, must be divisible by 3 to maintain codon frame).
-- `--up_primer` (optional): Upstream primer sequence for the first fragment (default: `ACAATTCTGCCTAGGAGATCT`, 21 bp).
-- `--down_primer` (optional): Downstream primer sequence for the last fragment (default: `TGACATCTGtagtgcaACAAG`, 21 bp).
-- `--oligo_len` (optional): Target oligo synthesis length (default: 300 bp).
-- `--safe_len` (optional): Length of the safe zone at each fragment's start/end, not mutated, used for PCR primers/overlaps (default: 30 bp).
-- `--output` (optional): Output CSV filename (default: `saturation_library_with_overlaps.csv`).
+## Usage
+Run the script from the command line with the following arguments:
+
+```bash
+python Saturation_mutation_NNK_v1.py --wt_DNA <wild_type_dna_sequence> [options]
+```
+
+### Command-Line Arguments
+| Argument         | Description                                                                 | Default Value                       |
+|------------------|-----------------------------------------------------------------------------|-------------------------------------|
+| `--wt_DNA`      | Wild-type DNA sequence (required, must contain only A, T, C, G, length divisible by 3). | None                                |
+| `--up_primer`   | Upstream primer sequence.                                                   | `ACAATTCTGCCTAGGAGATCT`         |
+| `--down_primer` | Downstream primer sequence.                                                 | `TGACATCTGtagtgcaACAAG`         |
+| `--oligo_len`   | Target synthesis length for each oligo (bp).                                | 300                                 |
+| `--safe_len`    | Safe zone length at each fragment end (bp, overlap = 2 × safe_len).        | 30                                  |
+| `--output`      | Output CSV filename.                                                       | `saturation_library_with_overlaps.csv` |
 
 ### Example
 ```bash
-python3 script.py --wt_DNA "ATGACTATCGCT" --up_primer "GGTCTCAACAATTCT" --down_primer "ACAAGTGAGACC" --oligo_len 300 --safe_len 30 --output my_library.csv
+python Saturation_mutation_NNK_v1.py --wt_DNA <your_wt_dna_sequence> --output s9_NNK_oligo.csv
 ```
-This generates a CSV file (`my_library.csv`) with oligos for the input sequence, adding the specified primers to the first and last fragments, with 30 bp safe zones and 300 bp target length.
 
-## Output
-The script generates a CSV file with the following columns:
-- **Name**: Oligo description (e.g., `Frag1_Pos2_GCG` for fragment 1, position 2, mutated to alanine).
-- **Sequence**: The oligo sequence, including primers for first/last fragments.
-- **Length**: Length of the oligo in base pairs.
+### Output
+- **CSV File**: Contains columns `Name`, `Sequence`, `Length`. Each row represents an oligo with a unique mutation (e.g., `Frag1_Pos2_A` for fragment 1, position 2, mutated to alanine).
+- **Console Output**: Reports fragment details (slice, length, mutated positions), warnings for missing positions or length violations, and total oligos generated.
 
-Example output in `my_library.csv`:
-```csv
-Name,Sequence,Length
-Frag1_Pos2_GCG,ACAATTCTGCCTAGGAGATCTATGGCGATCGCT,33
-Frag1_Pos2_CGC,ACAATTCTGCCTAGGAGATCTATGCGCATCGCT,33
+Example console output:
+```
+Fragment 1: slice [0:279], length 279, mutated aa 2 to 83
+Fragment 2: slice [219:519], length 300, mutated aa 84 to 163
+Fragment 3: slice [459:759], length 300, mutated aa 164 to 243
 ...
+All amino acid positions (except start codon) covered.
+Generated 8588 oligos. Saved to s9_NNK_oligo.csv
 ```
 
-## Design Details
-- **Fragmentation**: The input sequence is split into fragments based on `step_size = oligo_len - 2*safe_len` (default: 300 - 2*30 = 240 bp). The number of fragments is calculated as `ceil(len(wt_dna) / step_size)`.
-- **Overlaps**: Adjacent fragments overlap by 60 bp (30 bp from the end of one fragment + 30 bp from the start of the next), ensuring robust assembly. The first fragment has a shorter overlap (e.g., 39 bp) due to the upstream primer.
-- **Safe Zones**: Each fragment has 30 bp at both ends (except first/last adjusted for primers) that are not mutated, serving as PCR primer binding sites or assembly overlaps.
-- **Mutagenesis**: Excludes the start codon (position 1) and uses *E. coli*-optimized codons for 20 amino acids (no stop codon). Each mutable position generates 20 oligos.
-- **Assembly**: Designed for PCR amplification followed by Gibson Assembly or Golden Gate (if BsaI sites are added to primers, e.g., `GGTCTCA` for upstream).
+## Implementation Details
+- **Fragmentation**: The WT DNA is divided into fragments with a step size adjusted for the first fragment (219 bp gene part + 21 bp primer = 240 bp) to ensure 60 bp overlaps (2 × 30 bp safe zones). Subsequent fragments use 300 bp with 60 bp overlaps.
+- **Mutation Strategy**: For each mutable position, the script identifies the WT amino acid and generates mutants for the 19 other amino acids using *E. coli* optimized codons.
+- **Safety Zones**: Mutations are skipped in the first 30 bp and last 30 bp of each fragment (except specific cases) to maintain WT sequence in overlaps for assembly.
+- **Optimization for NNK**: Only 19 mutants per position are generated, excluding the WT amino acid, reducing oligo count compared to full 20-amino-acid saturation.
 
 ## Notes
-- **Sequence Validation**: Ensure the input `wt_DNA` contains only valid DNA bases (A, T, C, G). Invalid characters (e.g., 'D', 'V') will cause synthesis errors.
-- **Length Constraints**: If a fragment exceeds `oligo_len` after adding primers, the script adjusts the slice to fit (e.g., first fragment trims to 279 bp + 21 bp primer = 300 bp).
-- **BsaI Support**: To use BsaI for Golden Gate assembly, prepend `GGTCTCA` to `--up_primer` and append `GAGACC` to `--down_primer` with appropriate overhangs.
-- **NNK Alternative**: The current script generates one oligo per amino acid (20 per position). For a smaller library, modify to use NNK degenerate codons (1 oligo per position covering 20 AA + stop).
-- **Testing**: Use a short wt_DNA sequence (e.g., 600 bp) to verify output before running on a long sequence (e.g., 1368 bp).
-
-## Example Output for 1368 bp Sequence
-For a 1368 bp sequence (456 amino acids), the script typically generates:
-- **Fragments**: ~6 (depending on step_size).
-- **Oligos**: ~8960 (448 mutable positions × 20 amino acids).
-- **Overlap**: 60 bp between fragments, except ~39 bp for first fragment due to primer.
-- **File**: CSV with ~8960 rows, each with a unique oligo sequence.
+- The first fragment’s total length may exceed 300 bp due to the upstream primer (e.g., 321 bp with default primer). Check synthesis platform limits.
+- The script assumes the WT DNA does not include stop codons in the input sequence.
+- Overlaps are designed for assembly methods like Gibson assembly, ensuring WT sequence in overlap regions.
+- If the WT sequence is short, some positions may fall in safe zones and be reported as missing.
 
 ## Troubleshooting
-- **Invalid Sequence**: If the wt_DNA contains non-DNA characters, replace them (e.g., 'D' → 'C', 'V' → 'G') before running.
-- **Too Many Oligos**: Switch to NNK degeneracy to reduce the library size (~450 oligos).
-- **Short Last Fragment**: If the last fragment is too short (<150 bp), check synthesis provider requirements.
-- **Assembly Issues**: Ensure primers include enzyme sites (e.g., BsaI) if needed, and verify overlap lengths (60 bp is robust).
+- **Script hangs**: Likely due to large WT DNA or excessive oligo generation. Try reducing `oligo_len` or increasing `safe_len` to reduce fragment count.
+- **Missing positions**: Increase `oligo_len` or reduce `safe_len` to cover more positions, but ensure sufficient overlap for assembly.
+- **Length warnings**: Adjust `oligo_len` to accommodate primer lengths or check synthesis constraints.
 
 ## License
-MIT License. See `LICENSE` file for details.
+This project is licensed under the MIT License.
 
 ## Contact
-For issues or feature requests, open a GitHub issue or contact the repository maintainer.
+For issues or suggestions, please open an issue on the repository or contact the maintainer.
